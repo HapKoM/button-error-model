@@ -23,7 +23,6 @@ private slots:
     void moveAndResizeButton();
     void showSettingsDialog();
 protected:
-    void mouseMoveEvent(QMouseEvent *e);
     void mousePressEvent(QMouseEvent *e);
     void keyPressEvent(QKeyEvent* e);
     void loadSettings();

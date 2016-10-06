@@ -91,8 +91,8 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     qDebug() << "File " << QFileInfo(*outFile_).absoluteFilePath() << " closed";
+    outFile_->flush();
     outFile_->close();
-    saveSettings();
     delete outFile_;
     delete ui;
 }
@@ -104,16 +104,18 @@ void MainWindow::buttonClicked()
     //qDebug() << toMSecsSinceEpoch(lastPointTime_);
     //qDebug() << msecsTo(lastPointTime_, now);
     if (msecsTo(lastPointTime_, now) > MAX_MOTION_PAUSE_MS) {
+        qDebug() << "MainWindow::buttonClicked(): set firstMotionFlag_ to true";
+        qDebug() << now << " - " << lastPointTime_ << " = " << msecsTo(lastPointTime_, now) << " > " << MAX_MOTION_PAUSE_MS;
         firstMotionFlag_ = true;
     } else {
         firstMotionFlag_ = false;
 //#ifdef ANDROID
         lastMotionStart_ = lastPoint_;
         lastMotionStartTime_ = lastPointTime_;
-        lastPoint_ = mapFromGlobal(QCursor::pos());
-        lastPointTime_ = now;
 //#endif
     }
+    lastPointTime_ = now;
+    lastPoint_ = mapFromGlobal(QCursor::pos());
     moveAndResizeButton();
 }
 
@@ -172,27 +174,7 @@ void MainWindow::showSettingsDialog()
     }
     age_ = sd.getAge();
     compSkillYear_ = sd.getCompSkill();
-}
-
-void MainWindow::mouseMoveEvent(QMouseEvent *e)
-{
-/*#ifndef ANDROID
-    //qDebug() << "mouseMoveEvent()";
-    lastPoint_ = e->pos();
-    QDateTime now = QDateTime::currentDateTime();
-    if (msecsTo(lastPointTime_, now) > MAX_MOTION_PAUSE_MS) {
-        //qDebug() << "new motion started from " << lastPoint_;
-        lastMotionStart_ = lastPoint_;
-        lastMotionStartTime_ = now;
-    }
-    lastPointTime_ = now;
-#endif*/
-    /*QPointF p = e->pos();
-    QPointF r = pushButton_->pos();
-    QPointF s = QPointF(pushButton_->width(), pushButton_->height());
-    double d = fittsDistance(p, r, s);
-    double l = fittsSize(p, r, s);
-    ui->fittsLabel->setText(QString("d = %1; s = %2").arg(d).arg(l));*/
+    saveSettings();
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *e)
@@ -206,10 +188,10 @@ void MainWindow::mousePressEvent(QMouseEvent *e)
 //#ifdef ANDROID
         lastMotionStart_ = lastPoint_;
         lastMotionStartTime_ = lastPointTime_;
-        lastPoint_ = e->pos();
-        lastPointTime_ = now;
 //#endif
     }
+    lastPointTime_ = now;
+    lastPoint_ = e->pos();
     writeToFile(true);
 //#ifdef ANDROID
 //#endif
@@ -292,6 +274,7 @@ double MainWindow::fittsSize(QPointF p, QPointF r, QPointF s)
 
 void MainWindow::writeToFile(bool error)
 {
+    qDebug() << "writeToFile1 " << firstMotionFlag_ << outFile_;
     if (firstMotionFlag_) {
         firstMotionFlag_ = false;
         return;
